@@ -18,9 +18,11 @@ export const getEmployees = async (req, res) => {
       message: "Pagination offset is too large",
     });
   }
+
+  const filter = { isDeleted: false };
   const [employees, totalEmployees] = await Promise.all([
-    Employee.find().sort({ _id: 1 }).skip(skip).limit(limit),
-    Employee.countDocuments(),
+    Employee.find(filter).sort({ _id: 1 }).skip(skip).limit(limit),
+    Employee.countDocuments(filter),
   ]);
 
   const totalPages = Math.ceil(totalEmployees / limit);
@@ -42,7 +44,10 @@ export const getEmployees = async (req, res) => {
 export const getEmployeeById = async (req, res) => {
   const { id } = req.params;
 
-  const employee = await Employee.findById(id);
+  const employee = await Employee.findOne({
+    _id: id,
+    isDeleted: false,
+  });
 
   if (!employee) {
     return res.status(404).json({
@@ -100,11 +105,14 @@ export const updateEmployee = async (req, res) => {
     });
   }
 
-  const updatedEmployee = await Employee.findByIdAndUpdate(
-    id,
+  const updatedEmployee = await Employee.findOneAndUpdate(
+    {
+      _id: id,
+      isDeleted: false,
+    },
     { $set: req.body },
     {
-      new: true,
+      returnDocument: "after",
       runValidators: true,
     },
   );
@@ -140,7 +148,7 @@ export const deleteEmployee = async (req, res) => {
     {
       returnDocument: "after",
       runValidators: true,
-    }
+    },
   );
 
   if (!deletedEmployee) {
@@ -173,7 +181,7 @@ export const restoreEmployee = async (req, res) => {
     {
       returnDocument: "after",
       runValidators: true,
-    }
+    },
   );
 
   if (!restoredEmployee) {
