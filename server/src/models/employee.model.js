@@ -49,10 +49,18 @@ const employeeSchema = new mongoose.Schema(
       enum: ["Active", "Inactive", "On Leave"],
       default: "Active",
     },
+    isDeleted: {
+      type: Boolean,
+      default: false,
+    },
+    deletedAt: {
+      type: Date,
+      default: null,
+    },
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 const Employee = mongoose.model("Employee", employeeSchema);
