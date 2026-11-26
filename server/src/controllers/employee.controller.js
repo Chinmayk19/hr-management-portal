@@ -45,7 +45,7 @@ export const getEmployees = async (req, res) => {
   }
 
   if (status !== undefined) {
-    const allowedStatuses = ["Active", "Inactive"];
+    const allowedStatuses = Employee.schema.path("status").enumValues;
 
     if (!allowedStatuses.includes(status)) {
       return res.status(400).json({
