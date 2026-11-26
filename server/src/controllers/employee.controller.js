@@ -1,8 +1,20 @@
 import Employee from "../models/employee.model.js";
 
+const allowedSortFields = [
+  "_id",
+  "employeeId",
+  "firstName",
+  "lastName",
+  "department",
+  "salary",
+  "joiningDate",
+  "createdAt",
+];
+
 export const getEmployees = async (req, res) => {
   const page = Number(req.query.page ?? 1);
   const limit = Number(req.query.limit ?? 10);
+  const { department, status, search, sortBy = "_id", sortOrder = "asc" } = req.query;
 
   if (!Number.isSafeInteger(page) || page < 1 || !Number.isSafeInteger(limit) || limit < 1 || limit > 100) {
     return res.status(400).json({
@@ -20,8 +32,75 @@ export const getEmployees = async (req, res) => {
   }
 
   const filter = { isDeleted: false };
+
+  if (department !== undefined) {
+    if (typeof department !== "string" || !department.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid department",
+      });
+    }
+
+    filter.department = department.trim();
+  }
+
+  if (status !== undefined) {
+    const allowedStatuses = ["Active", "Inactive"];
+
+    if (!allowedStatuses.includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid status",
+      });
+    }
+
+    filter.status = status;
+  }
+
+  if (search !== undefined) {
+    if (typeof search !== "string" || !search.trim() || search.length > 100) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid search parameter",
+      });
+    }
+
+    const escapedSearch = search.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+    const searchPattern = {
+      $regex: escapedSearch,
+      $options: "i",
+    };
+
+    filter.$or = [
+      { firstName: searchPattern },
+      { lastName: searchPattern },
+      { email: searchPattern },
+      { employeeId: searchPattern },
+    ];
+  }
+
+  if (!allowedSortFields.includes(sortBy)) {
+    return res.status(400).json({
+      success: false,
+      message: "Invalid sort field",
+    });
+  }
+
+  if (!["asc", "desc"].includes(sortOrder)) {
+    return res.status(400).json({
+      success: false,
+      message: "Invalid sort order",
+    });
+  }
+  const sortDirection = sortOrder === "asc" ? 1 : -1;
+
+  const sort = {
+    [sortBy]: sortDirection,
+    _id: sortDirection,
+  };
   const [employees, totalEmployees] = await Promise.all([
-    Employee.find(filter).sort({ _id: 1 }).skip(skip).limit(limit),
+    Employee.find(filter).sort(sort).skip(skip).limit(limit),
     Employee.countDocuments(filter),
   ]);
 
