@@ -1,4 +1,6 @@
 import express from "express";
+import employeeRoutes from "./routes/employee.routes.js";
+import { errorHandler } from "./middlewares/error.middleware.js";
 
 const app = express();
 
@@ -10,5 +12,10 @@ app.get("/api/health", (req, res) => {
     message: "HR Management API is running",
   });
 });
+
+app.use("/api/employees", employeeRoutes);
+
+// Error handler
+app.use(errorHandler);
 
 export default app;
